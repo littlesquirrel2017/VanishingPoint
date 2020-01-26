@@ -60,7 +60,6 @@ def DrawLine(LineCountArray, FinalLines):
             else:
                 break
 
-    cv2.imshow("LineCountArray", LineCountArray)
     return LineCountArray
 
 
@@ -192,6 +191,7 @@ def FindLines(Image):
 #                              of vanishing point.
 #                 Flag - Tells that the vanishing point for the image can be
 #                        found or not.
+#                 ImageWithVanishingPoint - Image containing vanishing point.
 # Description   : This function takes in image for determination of vanishing
 #                 point, passes it to other functions for processing and finally
 #                 shows the vanishing point.
@@ -215,8 +215,10 @@ def ProcessImage(Image):
     VanishingPoint = DetermineVanishingPoint(Image.shape, FinalLines)
     # Print Vanishing Point
     # NOTE - Vanishing point's x coordinate is actually y coordinate to pass in cv2.circle and same for y coordinate
-    cv2.circle(Image, (VanishingPoint[1], VanishingPoint[0]), 5, (0, 0, 255), -1)
-    cv2.imshow("VanishingPoint", Image)
+    ImageWithVanishingPoint = Image.copy()
+    cv2.circle(ImageWithVanishingPoint, (VanishingPoint[1], VanishingPoint[0]), 5, (0, 0, 255), -1)
+
+    return ImageWithVanishingPoint
 
 
 ################################################################################
@@ -233,13 +235,19 @@ def ProcessImage(Image):
 ################################################################################
 def ReadInputAndProcess():
     InputImagesFolderPath = os.path.abspath(os.path.join('InputImages'))
-
+    OutputImagesFolderPath = os.path.abspath(os.path.join('OutputImage'))
     # Read input images one by one and passing for execution
     for ImageName in os.listdir(InputImagesFolderPath):
         InputImage = cv2.imread(InputImagesFolderPath + '/' + ImageName)
 
-        ProcessImage(InputImage)
-
+        ImageWithVanishingPoint = ProcessImage(InputImage)
+        BreakAt = 0
+        for i in range(len(ImageName)):
+            if ImageName[i] == '.':
+                BreakAt = i
+                break
+        OutputImagePath = OutputImagesFolderPath + '/' + ImageName[:BreakAt] + '.jpg'
+        cv2.imwrite(OutputImagePath, ImageWithVanishingPoint)
         # Check waitkey value.
         KeyPressed = cv2.waitKey(M.WAITKEY_VALUE)
         if KeyPressed == 32:      # Break when "Spacebar" is pressed
