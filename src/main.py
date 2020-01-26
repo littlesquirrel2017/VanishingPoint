@@ -21,19 +21,25 @@ import src.macros as M
 #                 Height - Holds num of rows in image
 #                 Width - Holds number of cols in image
 #                 theta - Holds angle of the line we are working.
-# Description   :
-# Return        :
+# Description   : This function draws complete line for each line in
+#                 FinalLines and increments the corresponding value in
+#                 LineCountArray.
+# Return        : LineCountArray
 ################################################################################
 def DrawLine(LineCountArray, FinalLines):
     Height, Width = LineCountArray.shape
 
+    # Iterating in all lines.
     for x1, y1, x2, y2 in FinalLines:
+        # Angle of line.
         theta = np.arctan(((y2 - y1)/(x2 - x1)))
 
+        # Loop for creating line in one direction
         for r in range(0, 1000):
             x0 = int(round(x1 + r*np.cos(theta)))
             y0 = int(round(y1 + r*np.sin(theta)))
 
+            # Checking if value exceeds or not and incrementing value
             if 0 <= x0 < Width and 1 <= y0 < Height-1:
                 LineCountArray[y0, x0] += 1.
                 LineCountArray[y0 - 1, x0] += 1.
@@ -41,16 +47,19 @@ def DrawLine(LineCountArray, FinalLines):
             else:
                 break
 
+        # Loop for creating line in other direction
         for r in range(1, 1000):
             x0 = int(round(x1 - r*np.cos(theta)))
             y0 = int(round(y1 - r*np.sin(theta)))
 
+            # Checking if value exceeds or not and incrementing value
             if 0 <= x0 < Width and 1 <= y0 < Height-1:
                 LineCountArray[y0, x0] += 1.
                 LineCountArray[y0 - 1, x0] += 1.
                 LineCountArray[y0 + 1, x0] += 1.
             else:
                 break
+
     cv2.imshow("LineCountArray", LineCountArray)
     return LineCountArray
 
@@ -62,13 +71,23 @@ def DrawLine(LineCountArray, FinalLines):
 #                              of vanishing point.
 #                 LineCountArray - 2D array which will count the number of
 #                                  lines present at every pixel.
-# Description   :
-# Return        :
+#                 VanishingPoint - Holds the index of maximum element in
+#                                  LineCountArray which is estimated to be the
+#                                  Vanishing point required.
+# Description   : This function determines the vanishing point by calling
+#                 other functions to draw lines according to FinalLines and
+#                 then finding the maximum element in the array which most
+#                 probably corresponds to the vanishing point.
+# Return        : VanishingPoint
 ################################################################################
 def DetermineVanishingPoint(ImageShape, FinalLines):
+    # Creating array with all values zero to count lines at a place.
     LineCountArray = np.zeros((ImageShape[0], ImageShape[1]), dtype=float)
+    # Calling function to draw lines and increment value in LineCountArray
     LineCountArray = DrawLine(LineCountArray, FinalLines)
+    # Finding maximum element's index
     VanishingPoint = (np.unravel_index(LineCountArray.argmax(), LineCountArray.shape))
+
     return VanishingPoint
 
 
