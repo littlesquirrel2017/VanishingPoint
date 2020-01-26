@@ -14,41 +14,67 @@ import src.macros as M
 
 ################################################################################
 # Function      : FilterLines
-# Parameters    : 
-# Description   :
-# Return        : -
+# Parameters    : Image - Holds Input image for processing.
+#                 Lines - Holds coordinates of both the ends of each line
+#                         found by Hough lines algo.
+#                 FinalLines - Holds the details of lines selected for detection
+#                              of vanishing point.
+#                 MaxLinesRequired - Maximum number of lines required for
+#                                    determining vanishing point in a image.
+#                 MinDiffForValidLine - Minimum difference between (x2 and x1)
+#                       and (y2 and y1) for considering a line to be valid for
+#                       detection. This parameter is introduced so that the
+#                       point sized lines are not included which can iterate
+#                       in any direction.
+#                 CountLines - This counts the number of lines found valid.
+# Description   : This function filters the lines found in a image according
+#                 to certain threshold. If required it also modifies those
+#                 thresholds and do a recursive call until conditions are
+#                 specified. It takes care that modifying threshold also do not
+#                 go under a certain threshold which cannot be compromised.
+# Return        : FinalLines, Flag(0 if lines can be detected and
+#                                  -1 if cannot be detected.)
 ################################################################################
 def FilterLines(Lines, FinalLines, Image, MaxLinesRequired, MinDiffForValidLine):
     CountLines = 0
-
+    # Check if Lines is empty or not
     if Lines is not None:
         for Line in Lines:
-            for x1, y1, x2, y2 in Line:
+            for x1, y1, x2, y2 in Line:     # Coordinates of both ends of a line
+                # Length(X) and Height(Y) of horizontal edge of the triangle formed by considering line as hypotenuse.
                 X = abs(x2 - x1)
                 Y = abs(y2 - y1)
+                # Check if height and length of triangle is greater than specified threshold.
                 if X >= MinDiffForValidLine and Y >= MinDiffForValidLine:
+                    # Increment count of lines found.
                     CountLines += 1
-                    cv2.line(Image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    LineArray = np.array([[x1, y1, x2, y2]])
+                    # Drawing line. (Can be omitted)
+                    cv2.line(Image, (x1, y1), (x2, y2), (0, 255, 0), 1)
+                    # Append FinalLines array.
+                    LineArray = np.array([[x1, y1, x2, y2]])       # Dummy array to append FinalLines
                     FinalLines = np.append(FinalLines, LineArray, axis=0)
 
+            # Check if enough lines are found.
             if CountLines >= MaxLinesRequired:
                 break
+
+    # Not enough lines found(No line found).
+    else:
+        print("Not enough lines found for estimating vanishing point.")
+        return FinalLines, -1
 
     if CountLines < MaxLinesRequired:
         if MaxLinesRequired < M.MIN_NUM_OF_LINES_FOUND:
             if MinDiffForValidLine > 2:
                 FilterLines(Lines, FinalLines, Image, M.MAX_NUM_OF_LINES_REQUIRED, MinDiffForValidLine - 1)
             else:
-                print("Not enough ines found for estimating vanishing point."
-                      "Vanishing Point in this case is estimated with whatsoever "
-                      "lines are fond and cannot be accurate.")
-                return FinalLines
+                print("Not enough lines found for estimating vanishing point.")
+                return FinalLines, -1
         else:
             FilterLines(Lines, FinalLines, Image, MaxLinesRequired - 1, MinDiffForValidLine)
 
     cv2.imshow("Lines", Image)
-    return FinalLines
+    return FinalLines, 0
 
 
 ################################################################################
@@ -81,15 +107,33 @@ def FindLines(Image):
 
 ################################################################################
 # Function      : ProcessImage
-# Parameter     :
-# Description   : Image - Holds Input image for processing.
-# Return        : -
+# Parameter     : Image - Holds Input image for processing.
+#                 Lines - Holds coordinates of both the ends of each line
+#                         found by Hough lines algo.
+#                 FinalLines - Holds the details of lines selected for detection
+#                              of vanishing point.
+#                 Flag - Tells that the vanishing point for the image can be
+#                        found or not.
+# Description   : This function takes in image for determination of vanishing
+#                 point, passes it to other functions for processing and finally
+#                 shows the vanishing point.
+# Return        : (The process is not completed if Flag value becomes -1)
 ################################################################################
 def ProcessImage(Image):
+    # Finding all the lines in the image.
     Lines = FindLines(Image)
+    # Creating variable for holding selected/filtered lines.
     FinalLines = np.zeros((1, 4), dtype=int)
-    FinalLines = FilterLines(Lines, FinalLines, Image.copy(), M.MAX_NUM_OF_LINES_REQUIRED, M.MIN_DIFF_FOR_VALID_LINE)
+    # Filtering lines for detection of vanishing point
+    FinalLines, Flag = FilterLines(Lines, FinalLines, Image.copy(), M.MAX_NUM_OF_LINES_REQUIRED,\
+                                   M.MIN_DIFF_FOR_VALID_LINE)
+    # Deleting the default value created when initialising the array.
     FinalLines = np.delete(FinalLines, 0, axis=0)
+
+    # Checking Flag
+    if Flag == -1:
+        return
+
     print(FinalLines)
 
 ################################################################################
