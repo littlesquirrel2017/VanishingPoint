@@ -13,6 +13,43 @@ import src.macros as M
 
 
 ################################################################################
+# Function      :
+# Parameter     :
+# Description   :
+# Return        :
+################################################################################
+def DrawLine(LineCountArray, FinalLines):
+    Height, Width = LineCountArray.shape
+    for x1, y1, x2, y2 in FinalLines:
+        theta = np.arctan(((y2 - y1)/(x2 - x1)))
+        for r in range(1, 1000):
+            x0 = int(round(x1 + r*np.cos(theta)))
+            y0 = int(round(y1 + r*np.sin(theta)))
+
+            if 0 <= x0 < Width and 0 <= y0 < Height:
+                LineCountArray[y0, x0] = 255
+
+        cv2.imshow("LineCountArray", LineCountArray)
+        cv2.waitKey(0)
+
+
+################################################################################
+# Function      : DetermineVanishingPoint
+# Parameter     : ImageShape - Holds the shape of the image
+#                 FinalLines - Holds the details of lines selected for detection
+#                              of vanishing point.
+#                 LineCountArray - 2D array which will count the number of
+#                                  lines present at every pixel.
+# Description   :
+# Return        :
+################################################################################
+def DetermineVanishingPoint(ImageShape, FinalLines):
+    LineCountArray = np.zeros((ImageShape[0], ImageShape[1]), dtype=float)
+    DrawLine(LineCountArray, FinalLines)
+
+
+
+################################################################################
 # Function      : FilterLines
 # Parameters    : Image - Holds Input image for processing.
 #                 Lines - Holds coordinates of both the ends of each line
@@ -134,7 +171,8 @@ def ProcessImage(Image):
     if Flag == -1:
         return
 
-    print(FinalLines)
+    DetermineVanishingPoint(Image.shape, FinalLines)
+
 
 ################################################################################
 # Function      : ReadInputAndProcess
