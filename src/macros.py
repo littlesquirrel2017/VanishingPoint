@@ -13,3 +13,11 @@
 
 # WaitKey Value
 WAITKEY_VALUE = 0
+
+
+# Max number of lines required for determining vanishing point
+MAX_NUM_OF_LINES_REQUIRED = 30
+MIN_NUM_OF_LINES_FOUND = 5
+
+# Minimum difference ((x2 - x1) & (y2 - y1)) for considering a line to be valid
+MIN_DIFF_FOR_VALID_LINE = 7
