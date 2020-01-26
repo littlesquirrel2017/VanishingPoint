@@ -13,24 +13,46 @@ import src.macros as M
 
 
 ################################################################################
-# Function      :
-# Parameter     :
+# Function      : DrawLine
+# Parameter     : LineCountArray - 2D array which will count the number of
+#                                  lines present at every pixel.
+#                 FinalLines - Holds the details of lines selected for detection
+#                              of vanishing point.
+#                 Height - Holds num of rows in image
+#                 Width - Holds number of cols in image
+#                 theta - Holds angle of the line we are working.
 # Description   :
 # Return        :
 ################################################################################
 def DrawLine(LineCountArray, FinalLines):
     Height, Width = LineCountArray.shape
+
     for x1, y1, x2, y2 in FinalLines:
         theta = np.arctan(((y2 - y1)/(x2 - x1)))
-        for r in range(1, 1000):
+
+        for r in range(0, 1000):
             x0 = int(round(x1 + r*np.cos(theta)))
             y0 = int(round(y1 + r*np.sin(theta)))
 
-            if 0 <= x0 < Width and 0 <= y0 < Height:
-                LineCountArray[y0, x0] = 255
+            if 0 <= x0 < Width and 1 <= y0 < Height-1:
+                LineCountArray[y0, x0] += 1.
+                LineCountArray[y0 - 1, x0] += 1.
+                LineCountArray[y0 + 1, x0] += 1.
+            else:
+                break
 
-        cv2.imshow("LineCountArray", LineCountArray)
-        cv2.waitKey(0)
+        for r in range(1, 1000):
+            x0 = int(round(x1 - r*np.cos(theta)))
+            y0 = int(round(y1 - r*np.sin(theta)))
+
+            if 0 <= x0 < Width and 1 <= y0 < Height-1:
+                LineCountArray[y0, x0] += 1.
+                LineCountArray[y0 - 1, x0] += 1.
+                LineCountArray[y0 + 1, x0] += 1.
+            else:
+                break
+    cv2.imshow("LineCountArray", LineCountArray)
+    return LineCountArray
 
 
 ################################################################################
@@ -45,8 +67,9 @@ def DrawLine(LineCountArray, FinalLines):
 ################################################################################
 def DetermineVanishingPoint(ImageShape, FinalLines):
     LineCountArray = np.zeros((ImageShape[0], ImageShape[1]), dtype=float)
-    DrawLine(LineCountArray, FinalLines)
-
+    LineCountArray = DrawLine(LineCountArray, FinalLines)
+    VanishingPoint = (np.unravel_index(LineCountArray.argmax(), LineCountArray.shape))
+    return VanishingPoint
 
 
 ################################################################################
@@ -110,7 +133,6 @@ def FilterLines(Lines, FinalLines, Image, MaxLinesRequired, MinDiffForValidLine)
         else:
             FilterLines(Lines, FinalLines, Image, MaxLinesRequired - 1, MinDiffForValidLine)
 
-    cv2.imshow("Lines", Image)
     return FinalLines, 0
 
 
@@ -171,7 +193,11 @@ def ProcessImage(Image):
     if Flag == -1:
         return
 
-    DetermineVanishingPoint(Image.shape, FinalLines)
+    VanishingPoint = DetermineVanishingPoint(Image.shape, FinalLines)
+    # Print Vanishing Point
+    # NOTE - Vanishing point's x coordinate is actually y coordinate to pass in cv2.circle and same for y coordinate
+    cv2.circle(Image, (VanishingPoint[1], VanishingPoint[0]), 5, (0, 0, 255), -1)
+    cv2.imshow("VanishingPoint", Image)
 
 
 ################################################################################
@@ -192,7 +218,6 @@ def ReadInputAndProcess():
     # Read input images one by one and passing for execution
     for ImageName in os.listdir(InputImagesFolderPath):
         InputImage = cv2.imread(InputImagesFolderPath + '/' + ImageName)
-        cv2.imshow(ImageName, InputImage)
 
         ProcessImage(InputImage)
 
